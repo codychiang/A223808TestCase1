@@ -92,6 +92,7 @@ class QMain(QWidget) :
 
         #---logWg---------------------------------------
     def createLogWidget(self, parentWg: QWidget):
+        #line 1
         self.qWg = QWidget(parent = parentWg)
         self.qWg.setFixedSize(360, 50)
  
@@ -109,22 +110,23 @@ class QMain(QWidget) :
         self.label_unit.move(280, 0)
         self.label_unit.setFixedWidth(100)
 
+        #line 2
         self.label1 = QLabel("Info: Empty", parentWg)
         self.label1.setFixedWidth(300)
         self.label1.setAlignment(Qt.AlignCenter)
         self.label1.setWordWrap(True)
 
+        #line 3
         self.logButton = QPushButton("log Start", parentWg)
         self.logButton.setToolTip("Select Log file")
         self.logButton.setFixedWidth(100)
         self.logButton.move(100,100)
         self.logButton.clicked.connect(self.on_logButtonClick)  
 
-        h_layout2 = QHBoxLayout() 
-        h_layout2.addWidget(self.qWg, alignment = Qt.AlignCenter, stretch = 1)  
-
         v_layout1 = QVBoxLayout() 
+        h_layout2 = QHBoxLayout() 
         v_layout1.addLayout(h_layout2)  
+        h_layout2.addWidget(self.qWg, alignment = Qt.AlignCenter, stretch = 1)  
         v_layout1.addWidget(self.label1, alignment = Qt.AlignCenter, stretch = 1)  
         v_layout1.addWidget(self.logButton, alignment = Qt.AlignCenter, stretch = 1)  
         v_layout1.addStretch(5)
