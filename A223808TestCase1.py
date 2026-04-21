@@ -1,6 +1,7 @@
 import sys
 from typing import List
 
+from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -11,11 +12,28 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QStatusBar,
+    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
+
+
+class LogStream(QObject):
+    text_written = Signal(str)
+
+    def __init__(self, original_stream):
+        super().__init__()
+        self.original_stream = original_stream
+
+    def write(self, message: str):
+        self.original_stream.write(message)
+        if message.strip():
+            self.text_written.emit(message.rstrip("\n"))
+
+    def flush(self):
+        self.original_stream.flush()
 
 
 class InterfaceSettingDialog(QDialog):
@@ -97,13 +115,36 @@ class MainWindow(QMainWindow):
         self.interface_dialog = InterfaceSettingDialog(self)
 
         central_widget = QWidget(self)
+        central_layout = QVBoxLayout()
+        self.log_text = QTextEdit(self)
+        self.log_text.setReadOnly(True)
+        self.log_text.setPlaceholderText("Application logs will appear here...")
+        central_layout.addWidget(self.log_text)
+        central_widget.setLayout(central_layout)
         self.setCentralWidget(central_widget)
 
         status_bar = QStatusBar(self)
         status_bar.showMessage("Ready")
         self.setStatusBar(status_bar)
 
+        self._install_log_redirect()
         self._create_menu()
+        print("Application started.")
+
+    def _install_log_redirect(self):
+        self._original_stdout = sys.stdout
+        self._original_stderr = sys.stderr
+
+        self.stdout_stream = LogStream(self._original_stdout)
+        self.stderr_stream = LogStream(self._original_stderr)
+        self.stdout_stream.text_written.connect(self.append_log)
+        self.stderr_stream.text_written.connect(self.append_log)
+
+        sys.stdout = self.stdout_stream
+        sys.stderr = self.stderr_stream
+
+    def append_log(self, text: str):
+        self.log_text.append(text)
 
     def _create_menu(self):
         menu_bar = self.menuBar()
@@ -124,9 +165,16 @@ class MainWindow(QMainWindow):
     def open_interface_setting(self):
         self.interface_dialog.refresh_usb_endpoints()
         self.interface_dialog.exec()
+        print("Interface Setting dialog opened.")
 
     def show_about(self):
         QMessageBox.information(self, "About", f"Current version: {APP_VERSION}")
+        print(f"About opened. Version: {APP_VERSION}")
+
+    def closeEvent(self, event):
+        sys.stdout = self._original_stdout
+        sys.stderr = self._original_stderr
+        super().closeEvent(event)
 
 
 if __name__ == "__main__":
